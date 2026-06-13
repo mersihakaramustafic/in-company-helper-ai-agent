@@ -1,2 +1,5 @@
 notion-client
 python-dotenv
+openai
+psycopg2-binary
+pgvector
