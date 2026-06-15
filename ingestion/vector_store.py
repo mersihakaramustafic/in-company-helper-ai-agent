@@ -61,6 +61,22 @@ def upsert_chunks(chunks: List[Dict[str, Any]]) -> None:
         conn.close()
 
 
+def page_has_changed(page_id: str, last_updated: str) -> bool:
+    conn = _connect()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT last_updated FROM documents WHERE page_id = %s LIMIT 1",
+                (page_id,),
+            )
+            row = cur.fetchone()
+            if not row:
+                return True
+            return row[0].isoformat() != last_updated.replace("Z", "+00:00")
+    finally:
+        conn.close()
+
+
 def search(query_embedding: List[float], limit: int = 5) -> List[Dict[str, Any]]:
     """Cosine similarity search. Returns chunks with metadata."""
     conn = _connect()
