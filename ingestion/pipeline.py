@@ -1,7 +1,3 @@
-"""
-Run ingestion: python -m ingestion.pipeline
-Syncs all Notion pages → chunks → embeddings → pgvector.
-"""
 import os
 from dotenv import load_dotenv
 
@@ -16,7 +12,7 @@ from ingestion.notion_connector import (
 )
 from ingestion.chunker import chunk_text
 from ingestion.embedder import embed_texts
-from ingestion.vector_store import upsert_chunks, page_has_changed
+from ingestion.vector_store import upsert_chunks
 
 EMBED_BATCH_SIZE = 50
 
@@ -35,10 +31,6 @@ def run() -> None:
         last_updated = get_page_last_updated(page)
 
         print(f"[{i}/{len(pages)}] {title}")
-
-        if not page_has_changed(page_id, last_updated):
-            print("  Skipped — up to date")
-            continue
 
         try:
             content = get_page_content(page_id)
