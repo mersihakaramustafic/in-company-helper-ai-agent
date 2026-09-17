@@ -7,4 +7,3 @@ fastapi
 pydantic
 uvicorn[standard]
 langgraph
-anthropic

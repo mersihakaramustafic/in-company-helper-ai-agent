@@ -11,7 +11,14 @@ app = FastAPI()
 async def chat(request: ChatRequest):
     result = await graph.ainvoke({
         "query": request.message,
-        "chunks": []
+        "chunks": [],
+        "answer": "",
     })
 
-    return result
+    return {
+        "answer": result["answer"],
+        "sources": [
+            {"title": c["page_title"], "url": c["source_url"], "score": c["score"]}
+            for c in result["chunks"]
+        ],
+    }
