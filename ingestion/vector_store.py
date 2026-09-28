@@ -46,7 +46,8 @@ def sync_page_chunks(
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "DELETE FROM documents WHERE page_id = %s AND NOT (content_hash = ANY(%s))",
+                "DELETE FROM documents WHERE page_id = %s "
+                "AND (content_hash IS NULL OR NOT (content_hash = ANY(%s)))",
                 (page_id, valid_hashes),
             )
 

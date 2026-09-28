@@ -2,6 +2,7 @@ import asyncio
 import os
 from typing import Any, Dict, List
 from typing_extensions import TypedDict
+from langgraph.config import get_stream_writer
 from langgraph.graph import StateGraph, START, END
 from openai import OpenAI
 from ingestion.embedder import embed_texts
@@ -36,13 +37,22 @@ async def generate(state: AgentState) -> Dict[str, Any]:
         f"Question: {state['query']}"
     )
 
+    writer = get_stream_writer()
+
     def _call():
-        response = _client.chat.completions.create(
+        stream = _client.chat.completions.create(
             model=MODEL,
             max_tokens=1024,
             messages=[{"role": "user", "content": prompt}],
+            stream=True,
         )
-        return response.choices[0].message.content
+        pieces = []
+        for chunk in stream:
+            delta = chunk.choices[0].delta.content
+            if delta:
+                pieces.append(delta)
+                writer(delta)
+        return "".join(pieces)
 
     answer = await asyncio.to_thread(_call)
     return {"answer": answer}
