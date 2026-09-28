@@ -1,3 +1,4 @@
+import hashlib
 from typing import List
 
 
@@ -29,3 +30,7 @@ def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 100) -> List[st
         chunks.append(current)
 
     return chunks
+
+
+def hash_chunk(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
