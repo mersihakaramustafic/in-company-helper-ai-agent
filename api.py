@@ -12,7 +12,7 @@ app = FastAPI()
 
 
 async def _stream_chat(message: str):
-    inputs = {"query": message, "chunks": [], "answer": ""}
+    inputs = {"query": message, "chunks": [], "answer": "", "error": None}
     async for mode, payload in graph.astream(inputs, stream_mode=["custom", "values"]):
         if mode == "custom":
             yield f"event: token\ndata: {json.dumps(payload)}\n\n"
@@ -21,7 +21,8 @@ async def _stream_chat(message: str):
                 {"title": c["page_title"], "url": c["source_url"], "score": c["score"]}
                 for c in payload["chunks"]
             ]
-            yield f"event: done\ndata: {json.dumps({'sources': sources})}\n\n"
+            done = {"sources": sources, "error": payload.get("error")}
+            yield f"event: done\ndata: {json.dumps(done)}\n\n"
 
 
 @app.post("/chat")

@@ -1,6 +1,6 @@
 import asyncio
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from typing_extensions import TypedDict
 from langgraph.config import get_stream_writer
 from langgraph.graph import StateGraph, START, END
@@ -18,15 +18,26 @@ class AgentState(TypedDict):
     query: str
     chunks: List[Dict[str, Any]]
     answer: str
+    error: Optional[str]
 
 
 async def retrieve(state: AgentState) -> Dict[str, Any]:
-    embedding = await asyncio.to_thread(embed_texts, [state["query"]])
-    chunks = await asyncio.to_thread(search, embedding[0], TOP_K)
-    return {"chunks": chunks}
+    try:
+        embedding = await asyncio.to_thread(embed_texts, [state["query"]])
+        chunks = await asyncio.to_thread(search, embedding[0], TOP_K)
+        return {"chunks": chunks}
+    except Exception as exc:
+        print(f"[retrieve] failed: {exc}")
+        return {"chunks": [], "error": str(exc)}
 
 
 async def generate(state: AgentState) -> Dict[str, Any]:
+    writer = get_stream_writer()
+
+    if state.get("error"):
+        writer("I couldn't search company documents right now. Please try again shortly.")
+        return {"answer": "I couldn't search company documents right now. Please try again shortly."}
+
     chunks = state["chunks"]
     context = "\n\n".join(
         f"[{c['page_title']}]\n{c['content']}" for c in chunks
@@ -36,8 +47,6 @@ async def generate(state: AgentState) -> Dict[str, Any]:
         f"{context}\n\n"
         f"Question: {state['query']}"
     )
-
-    writer = get_stream_writer()
 
     def _call():
         stream = _client.chat.completions.create(
@@ -54,8 +63,13 @@ async def generate(state: AgentState) -> Dict[str, Any]:
                 writer(delta)
         return "".join(pieces)
 
-    answer = await asyncio.to_thread(_call)
-    return {"answer": answer}
+    try:
+        answer = await asyncio.to_thread(_call)
+        return {"answer": answer}
+    except Exception as exc:
+        print(f"[generate] failed: {exc}")
+        writer("I couldn't generate an answer right now. Please try again shortly.")
+        return {"answer": "I couldn't generate an answer right now. Please try again shortly.", "error": str(exc)}
 
 
 def _build_graph():
