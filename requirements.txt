@@ -1,9 +1,0 @@
-notion-client
-python-dotenv
-openai
-psycopg[binary,pool]
-pgvector
-fastapi
-pydantic
-uvicorn[standard]
-langgraph
