@@ -1,13 +1,12 @@
-import asyncio
 import os
 import re
 from typing import Any, Dict, List, Optional
 from typing_extensions import TypedDict
 from langgraph.config import get_stream_writer
 from langgraph.graph import StateGraph, START, END
-from openai import OpenAI
-from ingestion.embedder import embed_texts
-from ingestion.vector_store import search
+from openai import AsyncOpenAI
+from ingestion.embedder import aembed_texts
+from ingestion.vector_store import asearch
 
 TOP_K = 5
 # Cosine similarity below this is treated as unrelated (text-embedding-3-small
@@ -26,7 +25,7 @@ SYSTEM_PROMPT = (
 )
 CITATION_RE = re.compile(r"\[(\d+(?:\s*,\s*\d+)*)\]")
 
-_client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+_client = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 
 class AgentState(TypedDict):
@@ -39,8 +38,8 @@ class AgentState(TypedDict):
 
 async def retrieve(state: AgentState) -> Dict[str, Any]:
     try:
-        embedding = await asyncio.to_thread(embed_texts, [state["query"]])
-        chunks = await asyncio.to_thread(search, embedding[0], TOP_K)
+        embedding = await aembed_texts([state["query"]])
+        chunks = await asearch(embedding[0], TOP_K)
         return {"chunks": [c for c in chunks if c["score"] >= MIN_SCORE]}
     except Exception as exc:
         print(f"[retrieve] failed: {exc}")
@@ -81,8 +80,8 @@ async def generate(state: AgentState) -> Dict[str, Any]:
         f"Question: {state['query']}"
     )
 
-    def _call():
-        stream = _client.chat.completions.create(
+    async def _call():
+        stream = await _client.chat.completions.create(
             model=MODEL,
             max_tokens=1024,
             messages=[
@@ -92,7 +91,7 @@ async def generate(state: AgentState) -> Dict[str, Any]:
             stream=True,
         )
         pieces = []
-        for chunk in stream:
+        async for chunk in stream:
             delta = chunk.choices[0].delta.content
             if delta:
                 pieces.append(delta)
@@ -100,7 +99,7 @@ async def generate(state: AgentState) -> Dict[str, Any]:
         return "".join(pieces)
 
     try:
-        answer = await asyncio.to_thread(_call)
+        answer = await _call()
         return {"answer": answer, "sources": _cited_sources(answer, list(pages.values()))}
     except Exception as exc:
         print(f"[generate] failed: {exc}")

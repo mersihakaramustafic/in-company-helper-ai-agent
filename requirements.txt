@@ -1,7 +1,7 @@
 notion-client
 python-dotenv
 openai
-psycopg2-binary
+psycopg[binary,pool]
 pgvector
 fastapi
 pydantic

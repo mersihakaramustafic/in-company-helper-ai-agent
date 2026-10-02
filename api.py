@@ -1,4 +1,5 @@
 import json
+from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -7,8 +8,17 @@ from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from schemas.chat import ChatRequest
 from agent.graph import graph
+from ingestion.vector_store import async_pool
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await async_pool.open()
+    yield
+    await async_pool.close()
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 async def _stream_chat(message: str):

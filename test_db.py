@@ -1,12 +1,9 @@
 from dotenv import load_dotenv
 load_dotenv()
-import psycopg2
-import os
-from pgvector.psycopg2 import register_vector
 from ingestion.embedder import embed_texts
+from ingestion.vector_store import _connect
 
-conn = psycopg2.connect(os.environ["DATABASE_URL"])
-register_vector(conn)
+conn = _connect()
 cur = conn.cursor()
 
 # Force sequential scan (bypass ivfflat index)
