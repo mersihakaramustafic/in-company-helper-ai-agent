@@ -7,6 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/chat': 'http://localhost:8000',
+      '/feedback': 'http://localhost:8000',
     },
   },
 })

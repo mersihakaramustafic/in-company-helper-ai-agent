@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
-import { streamChat, type Source } from './api'
+import { sendFeedback, streamChat, type Source } from './api'
 
 interface Message {
   id: number
@@ -8,6 +8,8 @@ interface Message {
   sources?: Source[]
   pending?: boolean
   error?: boolean
+  traceId?: string | null
+  feedback?: boolean
 }
 
 let nextId = 0
@@ -51,8 +53,13 @@ function App() {
         text,
         {
           onToken: (token) => updateMessage(assistantId, (m) => ({ content: m.content + token })),
-          onDone: ({ sources, error }) =>
-            updateMessage(assistantId, () => ({ sources, pending: false, error: Boolean(error) })),
+          onDone: ({ sources, error, trace_id }) =>
+            updateMessage(assistantId, () => ({
+              sources,
+              pending: false,
+              error: Boolean(error),
+              traceId: trace_id,
+            })),
         },
         controller.signal,
       )
@@ -67,6 +74,17 @@ function App() {
     } finally {
       updateMessage(assistantId, () => ({ pending: false }))
       setBusy(false)
+    }
+  }
+
+  const rate = async (message: Message, helpful: boolean) => {
+    if (!message.traceId || message.feedback !== undefined) return
+    updateMessage(message.id, () => ({ feedback: helpful }))
+    try {
+      await sendFeedback(message.traceId, helpful)
+    } catch (err) {
+      console.error(err)
+      updateMessage(message.id, () => ({ feedback: undefined }))
     }
   }
 
@@ -96,6 +114,29 @@ function App() {
               {m.pending && m.content && <span className="cursor" />}
             </div>
             {m.sources && m.sources.length > 0 && <SourceList sources={m.sources} />}
+            {m.traceId && !m.pending && (
+              <div className="feedback">
+                <button
+                  type="button"
+                  className={m.feedback === true ? 'selected' : ''}
+                  disabled={m.feedback !== undefined}
+                  onClick={() => rate(m, true)}
+                  aria-label="Helpful"
+                >
+                  👍
+                </button>
+                <button
+                  type="button"
+                  className={m.feedback === false ? 'selected' : ''}
+                  disabled={m.feedback !== undefined}
+                  onClick={() => rate(m, false)}
+                  aria-label="Not helpful"
+                >
+                  👎
+                </button>
+                {m.feedback !== undefined && <span>Thanks for the feedback</span>}
+              </div>
+            )}
           </div>
         ))}
         <div ref={bottomRef} />

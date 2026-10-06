@@ -4,6 +4,7 @@ version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
     "fastapi>=0.137.1",
+    "langfuse>=4.17.0",
     "langgraph>=1.2.5",
     "notion-client>=3.1.0",
     "openai>=2.41.1",

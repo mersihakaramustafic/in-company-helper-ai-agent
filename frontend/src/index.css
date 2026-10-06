@@ -231,3 +231,36 @@ a.cite:hover {
 .source-title .cite {
   vertical-align: baseline;
 }
+
+.feedback {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.feedback button {
+  padding: 2px 6px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  font-size: 0.9rem;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.feedback button:hover:not(:disabled) {
+  border-color: var(--border);
+  opacity: 1;
+}
+
+.feedback button.selected {
+  border-color: var(--accent);
+  opacity: 1;
+}
+
+.feedback button:disabled:not(.selected) {
+  cursor: default;
+  opacity: 0.25;
+}

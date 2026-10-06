@@ -115,7 +115,7 @@ async def asearch(query_embedding: List[float], limit: int = 5) -> List[Dict[str
         async with conn.cursor() as cur:
             await cur.execute(
                 """
-                SELECT page_title, source_url, connector_type, content,
+                SELECT page_id, page_title, source_url, connector_type, content,
                        1 - (embedding <=> %s::vector) AS score
                 FROM documents
                 ORDER BY embedding <=> %s::vector

@@ -1,8 +1,10 @@
 import os
 from typing import List
-from openai import AsyncOpenAI, OpenAI
+from langfuse.openai import AsyncOpenAI
+from openai import OpenAI
 
 _client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+# Used by the agent; the Langfuse drop-in traces embedding calls with tokens and cost.
 _async_client = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
 MODEL = "text-embedding-3-small"
 DIMENSIONS = 1536

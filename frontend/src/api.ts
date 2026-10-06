@@ -8,11 +8,21 @@ export interface Source {
 export interface DonePayload {
   sources: Source[]
   error: string | null
+  trace_id: string | null
 }
 
 interface StreamHandlers {
   onToken: (token: string) => void
   onDone: (payload: DonePayload) => void
+}
+
+export async function sendFeedback(traceId: string, helpful: boolean): Promise<void> {
+  const res = await fetch('/feedback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ trace_id: traceId, helpful }),
+  })
+  if (!res.ok) throw new Error(`Feedback failed with status ${res.status}`)
 }
 
 // EventSource only supports GET, so the SSE stream from POST /chat is parsed by hand.
